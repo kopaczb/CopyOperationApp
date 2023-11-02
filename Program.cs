@@ -12,17 +12,42 @@ public class Program
         
         CAMSetup camSetup = workPart.CAMSetup;
         
+        NCGroup geometryRoot = camSetup.GetRoot(CAMSetup.View.Geometry);
+        NCGroup methodRoot = camSetup.GetRoot(CAMSetup.View.MachineMethod);
+        NCGroup machineRoot = camSetup.GetRoot(CAMSetup.View.MachineTool);
+        NCGroup programRoot = camSetup.GetRoot(CAMSetup.View.ProgramOrder);
+        
+        CAMObject[] geometryRootMembers = geometryRoot.GetMembers();
+        CAMObject[] methodRootMembers = methodRoot.GetMembers();
+        CAMObject[] machineRootMembers = machineRoot.GetMembers();
+        CAMObject[] programRootMembers = programRoot.GetMembers();
+        
         theSession.ListingWindow.Open();
         
-        foreach (NXOpen.CAM.NCGroup group in camSetup.CAMGroupCollection)
+        theSession.ListingWindow.WriteLine("Geometry Root Members:");
+        foreach (CAMObject member in geometryRootMembers)
         {
-            theSession.ListingWindow.WriteLine("Group Type: " + group.GetType().ToString());
-
-            foreach (NXOpen.CAM.CAMObject operation in group.GetMembers())
-            {
-                theSession.ListingWindow.WriteLine("Operation Type: " + operation.GetType().ToString());
-            }
+            theSession.ListingWindow.WriteLine("Operation Type: " + member.GetType().ToString());
         }
+
+        theSession.ListingWindow.WriteLine("Method Root Members:");
+        foreach (CAMObject member in methodRootMembers)
+        {
+            theSession.ListingWindow.WriteLine("Operation Type: " + member.GetType().ToString());
+        }
+
+        theSession.ListingWindow.WriteLine("Machine Root Members:");
+        foreach (CAMObject member in machineRootMembers)
+        {
+            theSession.ListingWindow.WriteLine("Operation Type: " + member.GetType().ToString());
+        }
+
+        theSession.ListingWindow.WriteLine("Program Root Members:");
+        foreach (CAMObject member in programRootMembers)
+        {
+            theSession.ListingWindow.WriteLine("Operation Type: " + member.GetType().ToString());
+        }
+        
         theSession.ListingWindow.Close();
     }
 }
