@@ -1,55 +1,78 @@
 ﻿using System;
+using System.IO;
+using System.Windows.Forms;
 using NXOpen;
+using NXOpen.UF;
+using NXOpen.Utilities;
 using NXOpen.CAM;
-using System.Collections.Generic;
 
-public class Program
+public class TestRenameCamObjects
 {
-    public static void Main(string[] args)
+	static NXOpen.Session theSession = NXOpen.Session.GetSession();
+    static NXOpen.Part workPart = theSession.Parts.Work;
+    static NXOpen.Part displayPart = theSession.Parts.Display;
+    static UFSession theUFSession = UFSession.GetUFSession();
+    static NXOpen.UI theUI = NXOpen.UI.GetUI();
+    static string TempPath = Environment.GetEnvironmentVariable("TMP");
+    static string UGRelease = null;
+    static string UGFullRelease = null;
+
+	static NXOpen.Selection selection = theUI.SelectionManager;
+	static CAMSetup camSetup = workPart.CAMSetup;
+			
+	public static void Main(string[] args)
     {
-        Session theSession = Session.GetSession();
-        Part workPart = theSession.Parts.Work;
+		theSession.LogFile.WriteLine("Executing ... " + System.Reflection.Assembly.GetExecutingAssembly().Location);
 
-        // Pobierz ustawienia CAM
-        CAMSetup camSetup = workPart.CAMSetup;
+        System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
+        System.Threading.Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en-US");
 
-        // Pobierz grupę "Program Root"
-        NCGroup programRoot = camSetup.GetRoot(CAMSetup.View.ProgramOrder);
+        UGRelease = theSession.GetEnvironmentVariableValue("UGII_VERSION");
+        UGFullRelease = theSession.GetEnvironmentVariableValue("UGII_FULL_VERSION");
 
-        theSession.ListingWindow.Open();
+        System.Windows.Forms.Application.EnableVisualStyles();
 
-        // Inicjalizacja listy na operacje
-        List<CAMObject> objectsToBeMoved = new List<CAMObject>();
-
-        // Sprawdź, czy grupa "Program Root" istnieje
-        if (programRoot != null)
-        {
-            // Iteruj przez wszystkie grupy w grupie "Program Root"
-            foreach (NCGroup group in programRoot.GetMembers())
-            {
-                theSession.ListingWindow.WriteLine("Group Type: " + group.GetType().ToString());
-
-                // Iteruj przez operacje w grupie i dodaj do listy
-                foreach (CAMObject operation in group.GetMembers())
-                {
-                    theSession.ListingWindow.WriteLine("Operation Type: " + operation.GetType().ToString());
-                    objectsToBeMoved.Add(operation);
-                }
-            }
-        }
-        else
-        {
-            theSession.ListingWindow.WriteLine("Grupa 'Program Root' nie istnieje.");
-        }
-
-        theSession.ListingWindow.Close();
-
-        // Przeksztalcam liste na tablice, jesli to konieczne
-        CAMObject[] objectsArray = objectsToBeMoved.ToArray();
+        Session.UndoMarkId MyUndoMark = theSession.SetUndoMark(Session.MarkVisibility.Visible, "TestRenameCamObjects");
 		
-		NXOpen.CAM.Tool tool1 = ((NXOpen.CAM.Tool)workPart.CAMSetup.CAMGroupCollection.FindObject("10_R0.0_FL32_Z3_AL"));
-		workPart.CAMSetup.MoveObjects(NXOpen.CAM.CAMSetup.View.MachineTool, objectsArray, tool1, NXOpen.CAM.CAMSetup.Paste.Inside);
+
 		
-		workPart.CAMSetup.GenerateToolPath(objectsArray);
+		for (int i = 0; i <= theUI.SelectionManager.GetNumSelectedObjects() - 1; i++)
+        {	
+			if (selection.GetNumSelectedObjects() == 1)
+			{
+				TaggedObject obj = selection.GetSelectedTaggedObject(0);
+				
+			    if (obj is NXOpen.CAM.CAMObject)
+				{				
+					NXOpen.CAM.CAMObject camObject = obj as NXOpen.CAM.CAMObject;
+					
+					if (camSetup.IsGroup(camObject))
+					{
+						string thePartName = System.IO.Path.GetFileNameWithoutExtension(theSession.Parts.Work.FullPath);
+						string theIndex = NXOpenUI.NXInputBox.GetInputString("Nazwa operacji");
+						NXOpen.CAM.NCGroup theNcGroup = obj as NXOpen.CAM.NCGroup;
+						int theCounter = 0;
+					
+						foreach (NXOpen.CAM.CAMObject theCAMObject in theNcGroup.GetMembers())
+						{
+							string theGroupName = theIndex;
+							string key = theNcGroup.Name.Substring(7, 1);
+
+							theCAMObject.SetName(key + theCounter.ToString("00") + "____" + theGroupName.Replace(" / ", "_").Replace(" ", "_"));
+							theCounter ++;
+							if (theCounter > 999)
+							{
+								break;
+							}
+						}	
+					}	
+				}
+			}			
+        }
+    }	
+	
+	public int GetUnloadOption(string arg)
+    {
+        return (int)Session.LibraryUnloadOption.Immediately;
     }
 }
