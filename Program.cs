@@ -7,20 +7,22 @@ public class Program
     public static void Main(string[] args)
     {
         NXOpen.Session theSession = NXOpen.Session.GetSession();
-		NXOpen.Part workPart = theSession.Parts.Work;
-		NXOpen.Part displayPart = theSession.Parts.Display;
-		
+        NXOpen.Part workPart = theSession.Parts.Work;
+        NXOpen.Part displayPart = theSession.Parts.Display;
+        
         CAMSetup camSetup = workPart.CAMSetup;
-
-		NXOpen.CAM.NCGroupCollection groups = camSetup.CAMGroupCollection;
-		
-		foreach (NXOpen.CAM.NCGroup group in groups)
+        
+        theSession.ListingWindow.Open();
+        
+        foreach (NXOpen.CAM.NCGroup group in camSetup.CAMGroupCollection)
         {
-            Type opType = group.GetType();
-            NXOpen.UF.UFSession ufsession = NXOpen.UF.UFSession.GetUFSession();
-			theSession.ListingWindow.Open();
-			theSession.ListingWindow.WriteLine(opType.ToString());
-			theSession.ListingWindow.Close();               
-        }     
+            theSession.ListingWindow.WriteLine("Group Type: " + group.GetType().ToString());
+
+            foreach (NXOpen.CAM.CAMObject operation in group.GetMembers())
+            {
+                theSession.ListingWindow.WriteLine("Operation Type: " + operation.GetType().ToString());
+            }
+        }
+        theSession.ListingWindow.Close();
     }
 }
